@@ -2,40 +2,32 @@ const express = require('express');
 const puppeteer = require('puppeteer');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 
 app.get('/scrape', async (req, res) => {
-    const url = req.query.url;
-    if (!url) {
-        return res.status(400).json({ error: 'Missing url parameter' });
-    }
+  const { url } = req.query;
 
-    try {
-        const browser = await puppeteer.launch({
-            headless: "new",
-            args: ['--no-sandbox', '--disable-setuid-sandbox'],
-        });
+  if (!url) return res.status(400).json({ error: 'Missing URL' });
 
-        const page = await browser.newPage();
-        await page.goto(url, { waitUntil: 'domcontentloaded' });
+  try {
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
 
-        // 🟡 Ví dụ: lấy tiêu đề trang
-        const title = await page.title();
+    const page = await browser.newPage();
+    await page.goto(url, { waitUntil: 'domcontentloaded' });
 
-        // 📦 Trả về kết quả
-        res.json({ url, title });
+    const title = await page.title();
 
-        await browser.close();
-    } catch (error) {
-        console.error('Scraping error:', error);
-        res.status(500).json({ error: 'Scraping failed', details: error.message });
-    }
-});
+    await browser.close();
 
-app.get('/', (req, res) => {
-    res.send('Scraper API is running');
+    res.json({ url, title });
+  } catch (err) {
+    res.status(500).json({ error: 'Scraping failed', details: err.message });
+  }
 });
 
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
 });
