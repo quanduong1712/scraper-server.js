@@ -1,38 +1,40 @@
-const express = require('express');
-const puppeteer = require('puppeteer-core');
-const chromium = require('chrome-aws-lambda');
+const express = require("express");
+const puppeteer = require("puppeteer-core");
+const chromium = require("chrome-aws-lambda");
 
 const app = express();
-const PORT = process.env.PORT || 10000;
+const PORT = process.env.PORT || 3000;
 
-app.get('/scrape', async (req, res) => {
+app.get("/scrape", async (req, res) => {
   const { url } = req.query;
-  if (!url) return res.status(400).json({ error: 'Missing url parameter' });
+  if (!url) {
+    return res.status(400).json({ error: "Missing URL parameter" });
+  }
+
+  let browser;
 
   try {
-    const browser = await puppeteer.launch({
+    browser = await puppeteer.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath || '/usr/bin/chromium-browser',
+      executablePath: await chromium.executablePath,
       headless: chromium.headless,
     });
 
     const page = await browser.newPage();
-    await page.goto(url, { waitUntil: 'domcontentloaded' });
-    const title = await page.title();
-    await browser.close();
+    await page.goto(url, { waitUntil: "networkidle2" });
 
-    res.json({ url, title });
-  } catch (error) {
-    console.error('Scraping failed:', error);
-    res.status(500).json({ error: 'Scraping failed', details: error.message });
+    const title = await page.title();
+
+    res.json({ title });
+  } catch (err) {
+    console.error("Scraping failed:", err);
+    res.status(500).json({ error: "Scraping failed", details: err.message });
+  } finally {
+    if (browser) await browser.close();
   }
 });
 
-app.get('/', (req, res) => {
-  res.send('Scraper is running!');
-});
-
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
 });
