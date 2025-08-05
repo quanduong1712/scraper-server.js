@@ -6,7 +6,7 @@
     "start": "node scraper-server.js"
   },
   "dependencies": {
-    "puppeteer": "^21.3.8",       // hoặc phiên bản mới nhất
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "puppeteer": "^21.3.8"
   }
 }
