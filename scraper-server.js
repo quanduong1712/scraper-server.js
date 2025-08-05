@@ -7,28 +7,34 @@ const PORT = process.env.PORT || 3000;
 
 app.get('/scrape', async (req, res) => {
   const { url } = req.query;
+
   if (!url) {
-    return res.status(400).json({ error: 'Missing URL parameter' });
+    return res.status(400).json({ error: 'Missing url parameter' });
   }
 
-  let browser;
+  let browser = null;
+
   try {
+    const executablePath = await chromium.executablePath || '/usr/bin/chromium-browser';
+
     browser = await puppeteer.launch({
       args: chromium.args,
-      executablePath: await chromium.executablePath,
+      defaultViewport: chromium.defaultViewport,
+      executablePath,
       headless: chromium.headless,
+      ignoreHTTPSErrors: true,
     });
 
     const page = await browser.newPage();
     await page.goto(url, { waitUntil: 'networkidle2' });
-    const title = await page.title();
+    const html = await page.content();
+    await browser.close();
 
-    res.json({ title });
+    res.send(html);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Scraping failed', details: err.message });
-  } finally {
+    console.error('SCRAPE ERROR:', err);
     if (browser) await browser.close();
+    res.status(500).json({ error: 'Scraping failed', details: err.message });
   }
 });
 
